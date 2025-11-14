@@ -1,12 +1,7 @@
 {
-  "Joysticks": {
+  "Keyboard 0 Settings": {
     "window": {
-      "visible": false
-    }
-  },
-  "System Joysticks": {
-    "window": {
-      "enabled": false
+      "visible": true
     }
   },
   "keyboardJoysticks": [
@@ -99,6 +94,9 @@
       "povCount": 0
     }
   ],
-  "useEnableDisableHotkeys": true,
-  "zeroDisconnectedJoysticks": false
+  "robotJoysticks": [
+    {
+      "guid": "Keyboard0"
+    }
+  ]
 }

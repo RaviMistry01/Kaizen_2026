@@ -14,7 +14,10 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.pathfinding.Pathfinding;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -33,6 +36,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -63,7 +67,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private boolean visionEnabled = true;
     private double autoStartTime = 0;
 
-    
+    private final Field2d field = new Field2d();
 
     /*
      * SysId routine for characterizing translation. This is used to find PID gains
@@ -146,6 +150,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             startSimThread();
         }
         configureAutoBuilder();
+
+        SmartDashboard.putData("FieldPath", field);
+
     }
 
     /**
@@ -292,63 +299,65 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // }
 
     @Override
-public void periodic() {
+    public void periodic() {
 
-    // ✅ Simulation skip
-    // if (Utils.isSimulation()) return;
+        // ✅ Simulation skip
+        // if (Utils.isSimulation()) return;
 
-    // ✅ 1. Get MT2 pose
-    mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-l");
-   
-    rejectUpdate = false;
+        // ✅ 1. Get MT2 pose
+        mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-l");
 
-    // // ✅ 2. If auto is running, disable vision AFTER pose is initialized
-    // if (autoRunning) {
+        rejectUpdate = false;
 
-    //     double timeSinceStart = Utils.getCurrentTimeSeconds() - autoStartTime;
+        // // ✅ 2. If auto is running, disable vision AFTER pose is initialized
+        // if (autoRunning) {
 
-    //     if (timeSinceStart > 0.25) {
-    //         // ✅ Vision is DISABLED during auto path-following
-    //         visionEnabled = false;
-    //     }
-    // }
+        // double timeSinceStart = Utils.getCurrentTimeSeconds() - autoStartTime;
 
-    // // ✅ 3. Vision disabled? Then skip ALL tag updates
-    // if (!visionEnabled) {
-    //     return;  // ✅ Robot now runs purely on odometry
-    // }
+        // if (timeSinceStart > 0.25) {
+        // // ✅ Vision is DISABLED during auto path-following
+        // visionEnabled = false;
+        // }
+        // }
 
-    // ✅ 4. Normal rejection rules (only used BEFORE auto, or in teleop)
-    if (mt2 == null || mt2.tagCount == 0)
-        rejectUpdate = true;
+        // // ✅ 3. Vision disabled? Then skip ALL tag updates
+        // if (!visionEnabled) {
+        // return; // ✅ Robot now runs purely on odometry
+        // }
 
-    if (Math.abs(getPigeon2().getAngularVelocityZDevice().getValueAsDouble()) > 720)
-        rejectUpdate = true;
+        // ✅ 4. Normal rejection rules (only used BEFORE auto, or in teleop)
+        if (mt2 == null || mt2.tagCount == 0)
+            rejectUpdate = true;
 
-    // ✅ 5. Apply MT2 once vision is enabled
-    if (!rejectUpdate) {
-        // We trust X/Y but ignore theta
-        setVisionMeasurementStdDevs(VecBuilder.fill(0.7, 0.7, 9999999));
-        addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+        if (Math.abs(getPigeon2().getAngularVelocityZDevice().getValueAsDouble()) > 720)
+            rejectUpdate = true;
+
+        // ✅ 5. Apply MT2 once vision is enabled
+        if (!rejectUpdate) {
+            // We trust X/Y but ignore theta
+            setVisionMeasurementStdDevs(VecBuilder.fill(0.7, 0.7, 9999999));
+            addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+        }
+
+        field.setRobotPose(getState().Pose);
+
+        // ✅ 6. Dashboard
+        SmartDashboard.putNumber("Vision X", (mt2 != null) ? mt2.pose.getX() : -99);
+        SmartDashboard.putNumber("Vision Y", (mt2 != null) ? mt2.pose.getY() : -99);
+        SmartDashboard.putNumber("Robot X", getState().Pose.getX());
+        SmartDashboard.putNumber("Robot Y", getState().Pose.getY());
+        SmartDashboard.putNumber("Heading", getState().Pose.getRotation().getDegrees());
+
+        // ✅ Operator Perspective logic
+        if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
+            DriverStation.getAlliance().ifPresent(allianceColor -> {
+                setOperatorPerspectiveForward(
+                        allianceColor == Alliance.Red ? kRedAlliancePerspectiveRotation
+                                : kBlueAlliancePerspectiveRotation);
+                m_hasAppliedOperatorPerspective = true;
+            });
+        }
     }
-
-    // ✅ 6. Dashboard
-    SmartDashboard.putNumber("Vision X", (mt2 != null) ? mt2.pose.getX() : -99);
-    SmartDashboard.putNumber("Vision Y", (mt2 != null) ? mt2.pose.getY() : -99);
-    SmartDashboard.putNumber("Robot X", getState().Pose.getX());
-    SmartDashboard.putNumber("Robot Y", getState().Pose.getY());
-
-    // ✅ Operator Perspective logic
-    if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
-        DriverStation.getAlliance().ifPresent(allianceColor -> {
-            setOperatorPerspectiveForward(
-                allianceColor == Alliance.Red ? kRedAlliancePerspectiveRotation
-                        : kBlueAlliancePerspectiveRotation
-            );
-            m_hasAppliedOperatorPerspective = true;
-        });
-    }
-}
 
     // @Override
     // public void periodic() {
@@ -473,16 +482,33 @@ public void periodic() {
     }
 
     public Command pathfindTo(double x, double y, double headingDeg) {
-        Pose2d target = new Pose2d(x, y, Rotation2d.fromDegrees(headingDeg));
+    Pose2d target = new Pose2d(x, y, Rotation2d.fromDegrees(headingDeg));
 
-        PathConstraints constraints = new PathConstraints(
-                2.0,
-                1.5,
-                Math.toRadians(200),
-                Math.toRadians(250));
+    PathConstraints constraints = new PathConstraints(
+            2.0, // Max linear velocity (m/s)
+            1.5, // Max linear acceleration (m/s^2)
+            Math.toRadians(200), // Max angular velocity (rad/s)
+            Math.toRadians(250)  // Max angular acceleration (rad/s^2)
+    );
 
-        return AutoBuilder.pathfindToPose(target, constraints, 0.0);
+    // Create the actual auto command
+    Command pathCommand = AutoBuilder.pathfindToPose(target, constraints, 0.0);
+
+    // If you’re running in simulation, visualize the generated path
+    if (Utils.isSimulation()) {
+        PathPlannerPath currentPath = Pathfinding.getCurrentPath(
+                constraints,
+                new GoalEndState(0.0, Rotation2d.fromDegrees(headingDeg))
+        );
+
+        if (currentPath != null) {
+            field.getObject("Generated Path").setPoses(currentPath.getPathPoses());
+        }
     }
+
+    return pathCommand;
+}
+
 
     /**
      * Adds a vision measurement to the Kalman Filter. This will correct the

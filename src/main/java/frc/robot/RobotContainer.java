@@ -6,11 +6,18 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.io.IOException;
+
+import org.json.simple.parser.ParseException;
+
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.util.FileVersionException;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -140,6 +147,24 @@ public class RobotContainer {
         joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+         // ✅ Optional: visualize path when you run auto or press a button
+        if (Utils.isSimulation()) {
+            PathPlannerPath path;
+        try {
+                path = PathPlannerPath.fromPathFile("Tests");
+                field.getObject("Generated Path").setPoses(path.getPathPoses());
+        } catch (FileVersionException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+        } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+        } catch (ParseException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+        }
+        }
     }
 
     public Command getAutonomousCommand() {
