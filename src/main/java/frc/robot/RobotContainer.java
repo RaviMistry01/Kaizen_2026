@@ -62,7 +62,7 @@ public class RobotContainer {
         autoChooser = AutoBuilder.buildAutoChooser("None");
         SmartDashboard.putData("Auto Mode", autoChooser);
 
-        SmartDashboard.putData("Field", field); // ✅ show field in sim
+       
 
         if (RobotBase.isSimulation()) {
             // Spawn robot in the middle of field
@@ -116,9 +116,10 @@ public class RobotContainer {
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
+
         final var idle = new SwerveRequest.SwerveDriveBrake();
         RobotModeTriggers.disabled().whileTrue(
-                drivetrain.applyRequest(() -> idle).ignoringDisable(false)); //To run this command 
+                drivetrain.applyRequest(() -> idle).ignoringDisable(true)); //To run this command 
 
         joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
         joystick.b().whileTrue(drivetrain.applyRequest(

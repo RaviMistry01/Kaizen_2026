@@ -59,6 +59,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     /** Swerve request to apply during robot-centric path following */
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
+    
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -154,6 +155,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         configureAutoBuilder();
 
         SmartDashboard.putData("FieldPath", field);
+
+        
 
     }
 
@@ -343,7 +346,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         field.setRobotPose(getState().Pose);
 
-        // ✅ 6. Dashboard
+       // ✅ 6. Dashboard
         SmartDashboard.putNumber("Vision X", (mt2 != null) ? mt2.pose.getX() : -99);
         SmartDashboard.putNumber("Vision Y", (mt2 != null) ? mt2.pose.getY() : -99);
         SmartDashboard.putNumber("Robot X", getState().Pose.getX());
@@ -360,6 +363,37 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             });
         }
     }
+
+
+    // private void optimizeCAN() {
+
+    //     for (var module : getModules()) {
+    
+    //         // DRIVE MOTOR
+    //         var drive = module.getDriveMotor();
+    //         drive.getPosition().setUpdateFrequency(50);    // default 100
+    //         drive.getVelocity().setUpdateFrequency(50);    // default 100
+    //         drive.getMotorVoltage().setUpdateFrequency(20);
+    //         drive.optimizeBusUtilization();
+    
+    //         // STEER MOTOR
+    //         var steer = module.getSteerMotor();
+    //         steer.getPosition().setUpdateFrequency(100);   // need more frequent
+    //         steer.getVelocity().setUpdateFrequency(50);
+    //         steer.optimizeBusUtilization();
+    
+    //         // CANCODER
+    //         var enc = module.getEncoder();
+    //         enc.getPosition().setUpdateFrequency(50);
+    //         enc.getVelocity().setUpdateFrequency(20);
+    //         enc.optimizeBusUtilization();
+    //     }
+    
+    //     // PIGEON2
+    //     getPigeon2().getYaw().setUpdateFrequency(100);
+    //     getPigeon2().optimizeBusUtilization();
+    // }
+    
 
     // @Override
     // public void periodic() {
@@ -489,8 +523,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     PathConstraints constraints = new PathConstraints(
             2.0, // Max linear velocity (m/s)
             1.5, // Max linear acceleration (m/s^2)
-            Math.toRadians(200), // Max angular velocity (rad/s)
-            Math.toRadians(250)  // Max angular acceleration (rad/s^2)
+            Math.toRadians(300), // Max angular velocity (rad/s)
+            Math.toRadians(350)  // Max angular acceleration (rad/s^2)
     );
 
     // Create the actual auto command
