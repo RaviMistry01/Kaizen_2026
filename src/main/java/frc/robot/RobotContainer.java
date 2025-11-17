@@ -118,7 +118,7 @@ public class RobotContainer {
         // neutral mode is applied to the drive motors while disabled.
         final var idle = new SwerveRequest.SwerveDriveBrake();
         RobotModeTriggers.disabled().whileTrue(
-                drivetrain.applyRequest(() -> idle).ignoringDisable(true)); //before true
+                drivetrain.applyRequest(() -> idle).ignoringDisable(false)); //To run this command 
 
         joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
         joystick.b().whileTrue(drivetrain.applyRequest(
@@ -164,6 +164,7 @@ public class RobotContainer {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
         }
+
         }
     }
 
