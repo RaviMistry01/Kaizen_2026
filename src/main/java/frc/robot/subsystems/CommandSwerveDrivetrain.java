@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.time.Duration;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -59,7 +60,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     /** Swerve request to apply during robot-centric path following */
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
-    
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -80,7 +80,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             new SysIdRoutine.Config(
                     null, // Use default ramp rate (1 V/s)
                     Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
-                    null, // Use default timeout (10 s)
+                    Seconds.of(3), // Use default timeout (10 s)
                     // Log state with SignalLogger class
                     state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())),
             new SysIdRoutine.Mechanism(
@@ -92,11 +92,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * SysId routine for characterizing steer. This is used to find PID gains for
      * the steer motors.
      */
+
+    
     private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
             new SysIdRoutine.Config(
                     null, // Use default ramp rate (1 V/s)
                     Volts.of(7), // Use dynamic voltage of 7 V
                     null, // Use default timeout (10 s)
+
                     // Log state with SignalLogger class
                     state -> SignalLogger.writeString("SysIdSteer_State", state.toString())),
             new SysIdRoutine.Mechanism(
@@ -155,8 +158,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         configureAutoBuilder();
 
         SmartDashboard.putData("FieldPath", field);
-
-        
 
     }
 
@@ -346,7 +347,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         field.setRobotPose(getState().Pose);
 
-       // ✅ 6. Dashboard
+        // ✅ 6. Dashboard
         SmartDashboard.putNumber("Vision X", (mt2 != null) ? mt2.pose.getX() : -99);
         SmartDashboard.putNumber("Vision Y", (mt2 != null) ? mt2.pose.getY() : -99);
         SmartDashboard.putNumber("Robot X", getState().Pose.getX());
@@ -364,36 +365,34 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
     }
 
-
     // private void optimizeCAN() {
 
-    //     for (var module : getModules()) {
-    
-    //         // DRIVE MOTOR
-    //         var drive = module.getDriveMotor();
-    //         drive.getPosition().setUpdateFrequency(50);    // default 100
-    //         drive.getVelocity().setUpdateFrequency(50);    // default 100
-    //         drive.getMotorVoltage().setUpdateFrequency(20);
-    //         drive.optimizeBusUtilization();
-    
-    //         // STEER MOTOR
-    //         var steer = module.getSteerMotor();
-    //         steer.getPosition().setUpdateFrequency(100);   // need more frequent
-    //         steer.getVelocity().setUpdateFrequency(50);
-    //         steer.optimizeBusUtilization();
-    
-    //         // CANCODER
-    //         var enc = module.getEncoder();
-    //         enc.getPosition().setUpdateFrequency(50);
-    //         enc.getVelocity().setUpdateFrequency(20);
-    //         enc.optimizeBusUtilization();
-    //     }
-    
-    //     // PIGEON2
-    //     getPigeon2().getYaw().setUpdateFrequency(100);
-    //     getPigeon2().optimizeBusUtilization();
+    // for (var module : getModules()) {
+
+    // // DRIVE MOTOR
+    // var drive = module.getDriveMotor();
+    // drive.getPosition().setUpdateFrequency(50); // default 100
+    // drive.getVelocity().setUpdateFrequency(50); // default 100
+    // drive.getMotorVoltage().setUpdateFrequency(20);
+    // drive.optimizeBusUtilization();
+
+    // // STEER MOTOR
+    // var steer = module.getSteerMotor();
+    // steer.getPosition().setUpdateFrequency(100); // need more frequent
+    // steer.getVelocity().setUpdateFrequency(50);
+    // steer.optimizeBusUtilization();
+
+    // // CANCODER
+    // var enc = module.getEncoder();
+    // enc.getPosition().setUpdateFrequency(50);
+    // enc.getVelocity().setUpdateFrequency(20);
+    // enc.optimizeBusUtilization();
     // }
-    
+
+    // // PIGEON2
+    // getPigeon2().getYaw().setUpdateFrequency(100);
+    // getPigeon2().optimizeBusUtilization();
+    // }
 
     // @Override
     // public void periodic() {
@@ -518,39 +517,39 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     public Command pathfindTo(double x, double y, double headingDeg) {
-    Pose2d target = new Pose2d(x, y, Rotation2d.fromDegrees(headingDeg));
+        Pose2d target = new Pose2d(x, y, Rotation2d.fromDegrees(headingDeg));
 
-    PathConstraints constraints = new PathConstraints(
-            2.0, // Max linear velocity (m/s)
-            1.5, // Max linear acceleration (m/s^2)
-            Math.toRadians(300), // Max angular velocity (rad/s)
-            Math.toRadians(350)  // Max angular acceleration (rad/s^2)
-    );
-
-    // Create the actual auto command
-    Command pathCommand = AutoBuilder.pathfindToPose(target, constraints, 0.0);
-
-    // If you’re running in simulation, visualize the generated path
-    if (Utils.isSimulation()) {
-        PathPlannerPath currentPath = Pathfinding.getCurrentPath(
-                constraints,
-                new GoalEndState(0.0, Rotation2d.fromDegrees(headingDeg))
+        PathConstraints constraints = new PathConstraints(
+                2.0, // Max linear velocity (m/s)
+                1.5, // Max linear acceleration (m/s^2)
+                Math.toRadians(300), // Max angular velocity (rad/s)
+                Math.toRadians(350) // Max angular acceleration (rad/s^2)
         );
 
-        if (currentPath != null) {
-            field.getObject("Generated Path").setPoses(currentPath.getPathPoses());
+        // Create the actual auto command
+        Command pathCommand = AutoBuilder.pathfindToPose(target, constraints, 0.0);
+
+        // If you’re running in simulation, visualize the generated path
+        if (Utils.isSimulation()) {
+            PathPlannerPath currentPath = Pathfinding.getCurrentPath(
+                    constraints,
+                    new GoalEndState(0.0, Rotation2d.fromDegrees(headingDeg)));
+
+            if (currentPath != null) {
+                field.getObject("Generated Path").setPoses(currentPath.getPathPoses());
+            }
         }
+
+        return pathCommand;
     }
 
-    return pathCommand;
-}
+    /**
+     * Sets the wheels into an X formation to prevent movement.
+     */
+    public void setX() {
 
-  /**
-   * Sets the wheels into an X formation to prevent movement.
-   */
-    public void setX(){
-        
     }
+
     /**
      * Adds a vision measurement to the Kalman Filter. This will correct the
      * odometry pose estimate
